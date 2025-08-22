@@ -1,48 +1,39 @@
-// Image preview
-const upload = document.getElementById("uploadImage");
-const preview = document.getElementById("preview");
-upload.addEventListener("change", () => {
-  const file = upload.files[0];
+// Progress bar update
+const tasks = document.querySelectorAll('.task');
+const progress = document.getElementById('progress');
+const streakCount = document.getElementById('streak-count');
+let streak = 0;
+
+tasks.forEach(task => {
+  task.addEventListener('change', updateProgress);
+});
+
+function updateProgress() {
+  const total = tasks.length;
+  const completed = document.querySelectorAll('.task:checked').length;
+  const percent = (completed / total) * 100;
+  progress.style.width = percent + '%';
+
+  if (completed === total) {
+    streak++;
+    streakCount.textContent = streak;
+  }
+}
+
+// Image upload preview
+const fileInput = document.getElementById('file-input');
+const preview = document.getElementById('preview');
+const label = document.querySelector('.image-upload label');
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = e => {
-      preview.src = e.target.result;
+    reader.onload = () => {
+      preview.src = reader.result;
       preview.style.display = "block";
-    };
+      label.style.display = "none";
+    }
     reader.readAsDataURL(file);
   }
 });
-
-// Progress bar update
-const checkboxes = document.querySelectorAll("#taskList input[type='checkbox']");
-const progressFill = document.getElementById("progressFill");
-checkboxes.forEach(cb => cb.addEventListener("change", updateProgress));
-
-function updateProgress() {
-  const total = checkboxes.length;
-  const done = [...checkboxes].filter(cb => cb.checked).length;
-  const percent = (done / total) * 100;
-  progressFill.style.width = percent + "%";
-}
-
-// Streak counter
-let streak = 0;
-function checkStreak() {
-  const allDone = [...checkboxes].every(cb => cb.checked);
-  if (allDone) {
-    streak++;
-    document.getElementById("streakCounter").textContent = streak + "🔥";
-  }
-}
-checkboxes.forEach(cb => cb.addEventListener("change", checkStreak));
-
-// Timetable edit toggle
-function toggleEdit() {
-  const table = document.getElementById("timetable");
-  if (table.contentEditable === "true") {
-    table.contentEditable = "false";
-    alert("Changes saved!");
-  } else {
-    table.contentEditable = "true";
-  }
-}
