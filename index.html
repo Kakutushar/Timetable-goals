@@ -3,60 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Timetable</title>
+  <title>My Daily Plan</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     
-    <!-- Image Upload -->
-    <label class="image-upload">
-      <input type="file" accept="image/*" hidden id="uploadImage">
-      <span>Click to upload image</span>
-      <img id="preview" style="display:none;">
-    </label>
-    
-    <!-- Heading -->
-    <h1 contenteditable="true">My Daily Plan</h1>
-    
-    <!-- Progress Bar -->
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill"></div>
+    <!-- Upload Image -->
+    <div class="image-upload">
+      <label for="file-input">Click to upload image</label>
+      <input id="file-input" type="file" accept="image/*">
+      <img id="preview" alt="Preview" />
     </div>
 
-    <!-- To-do + streak -->
-    <div class="todo-section">
-      <div class="todos">
-        <ul id="taskList">
-          <li><input type="checkbox"> Task 1</li>
-          <li><input type="checkbox"> Task 2</li>
-          <li><input type="checkbox"> Task 3</li>
-        </ul>
+    <!-- Title + Progress -->
+    <h1 contenteditable="true">My Daily Plan</h1>
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- Tasks + Streak -->
+    <div class="task-streak">
+      <div class="tasks">
+        <label><input type="checkbox" class="task"> Task 1</label><br>
+        <label><input type="checkbox" class="task"> Task 2</label><br>
+        <label><input type="checkbox" class="task"> Task 3</label>
       </div>
-      <div class="streak" id="streakCounter">0🔥</div>
+      <div class="streak">
+        <div class="circle">
+          <span id="streak-count">0</span> 🔥
+        </div>
+      </div>
     </div>
 
     <!-- Timetable -->
-    <div class="timetable-container">
-      <button class="edit-btn" onclick="toggleEdit()">Edit</button>
-      <table class="timetable" contenteditable="false" id="timetable">
+    <div class="timetable">
+      <button id="edit-btn">Edit</button>
+      <table>
         <tr>
           <th>Monday</th><th>Tuesday</th><th>Wednesday</th>
           <th>Thursday</th><th>Friday</th><th>Sat/Sun</th>
         </tr>
-        <tr>
-          <td></td><td></td><td></td><td></td><td></td><td></td>
-        </tr>
-        <tr>
-          <td></td><td></td><td></td><td></td><td></td><td></td>
-        </tr>
-        <tr>
-          <td></td><td></td><td></td><td></td><td></td><td></td>
-        </tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>
       </table>
     </div>
-  </div>
 
+  </div>
   <script src="script.js"></script>
 </body>
 </html>
