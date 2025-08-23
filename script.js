@@ -33,8 +33,8 @@ const uncompletedCloseBtn = document.getElementById('uncompleted-close-btn');
 const defaultData = {
     heading: "My Daily Dashboard",
     goals: [],
-    goalsDate: new Date().toDateString(), // NEW: Track the date for the goals
-    uncompletedArchive: [], // NEW: Store old, unfinished tasks
+    goalsDate: new Date().toDateString(),
+    uncompletedArchive: [],
     streak: { count: 0, lastCompleted: null },
     timetable: {},
     imageUrl: ''
@@ -45,8 +45,6 @@ let isEditingTimetable = false;
 let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-let debounceTimeout;
 
 // --- Data Handling with JSONBin.io ---
 async function loadDataFromJsonBin() {
@@ -80,34 +78,26 @@ async function loadDataFromJsonBin() {
         currentData = { ...defaultData };
     }
     
-    // Run daily checks after loading data
     checkDailyReset();
     checkStreakOnLoad();
     updateUI();
 }
 
-// --- NEW: Daily Reset Logic ---
 function checkDailyReset() {
     const today = new Date().toDateString();
-    // If the saved goals are from a previous day
     if (currentData.goalsDate !== today) {
-        // Find any goals that were not completed
         const uncompleted = currentData.goals.filter(goal => !goal.completed);
         
-        // Add them to the archive
         if (uncompleted.length > 0) {
-            // Ensure archive exists
             if (!currentData.uncompletedArchive) {
                 currentData.uncompletedArchive = [];
             }
             currentData.uncompletedArchive.push(...uncompleted);
         }
         
-        // Start fresh for today
         currentData.goals = [];
         currentData.goalsDate = today;
         
-        // Save these changes immediately
         saveDataToJsonBin();
     }
 }
@@ -127,11 +117,6 @@ async function saveDataToJsonBin() {
     } catch (error) {
         console.error("Error saving data:", error);
     }
-}
-
-function debouncedSave() {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(saveDataToJsonBin, 1000);
 }
 
 // --- UI Update Functions ---
@@ -173,18 +158,43 @@ function updateGoals() {
             goalsList.appendChild(li);
         });
     }
-    updateProgressBar();
+    // This function will now also handle the streak logic
+    updateProgressAndStreak();
 }
 
-function updateProgressBar() {
+// --- NEW COMBINED LOGIC for Progress and Streak ---
+function updateProgressAndStreak() {
     const total = currentData.goals?.length || 0;
-    if (total === 0) {
-        progressBar.style.width = '0%';
-        return;
+    let completed = 0;
+    if (total > 0) {
+        completed = currentData.goals.filter(g => g.completed).length;
     }
-    const completed = currentData.goals.filter(g => g.completed).length;
-    progressBar.style.width = `${(completed / total) * 100}%`;
+    
+    const percentage = (total === 0) ? 0 : (completed / total) * 100;
+    
+    progressBar.style.width = `${percentage}%`;
+
+    // New Streak Logic based on progress bar
+    const todayString = new Date().toDateString();
+
+    if (percentage === 100 && total > 0) {
+        // If progress is 100% and streak hasn't been awarded today, award it.
+        if (currentData.streak.lastCompleted !== todayString) {
+            currentData.streak.count++;
+            currentData.streak.lastCompleted = todayString;
+        }
+    } else {
+        // If progress is less than 100% and the streak WAS awarded today, take it back.
+        if (currentData.streak.lastCompleted === todayString) {
+            currentData.streak.count--;
+            currentData.streak.lastCompleted = null;
+        }
+    }
+    
+    updateStreakUI(); // Update the display
+    saveDataToJsonBin(); // Save changes
 }
+
 
 function updateStreakUI() {
     streakCountEl.textContent = currentData.streak?.count || 0;
@@ -203,54 +213,27 @@ function updateUncompletedModal() {
     }
 }
 
-// --- CORRECTED Streak Logic ---
 function checkStreakOnLoad() {
     if (!currentData.streak || !currentData.streak.lastCompleted) {
-        return; // No streak to check
+        return;
     }
 
-    // Normalize today to the start of the day for accurate comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Normalize yesterday to the start of the day
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
-    // Normalize the last completed date from the saved string
     const lastCompletedDate = new Date(currentData.streak.lastCompleted);
     lastCompletedDate.setHours(0, 0, 0, 0);
 
-    // If the last completion was not today and not yesterday, the streak is broken.
     if (lastCompletedDate.getTime() !== today.getTime() && lastCompletedDate.getTime() !== yesterday.getTime()) {
         console.log("Streak broken!");
         currentData.streak.count = 0;
         currentData.streak.lastCompleted = null;
-        debouncedSave(); // Save the reset streak
+        saveDataToJsonBin();
     }
 }
-
-function updateStreakLogic() {
-    const todayString = new Date().toDateString();
-    const allCompleted = currentData.goals?.length > 0 && currentData.goals.every(g => g.completed);
-    
-    if (allCompleted) {
-        if (currentData.streak.lastCompleted !== todayString) {
-            currentData.streak.count++;
-            currentData.streak.lastCompleted = todayString;
-        }
-    } 
-    else {
-        if (currentData.streak.lastCompleted === todayString) {
-            currentData.streak.count--;
-            currentData.streak.lastCompleted = null;
-        }
-    }
-    
-    updateStreakUI();
-    debouncedSave();
-}
-
 
 function updateTimetable() {
     timetableBody.innerHTML = '';
@@ -271,7 +254,7 @@ function updateTimetable() {
 // --- Event Listeners ---
 mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
-    debouncedSave();
+    saveDataToJsonBin();
 });
 
 imageUploadInput.addEventListener('change', async (e) => {
@@ -296,7 +279,7 @@ imageUploadInput.addEventListener('change', async (e) => {
         if (result.data && result.data.url) {
             currentData.imageUrl = result.data.url;
             updateProfileImage();
-            debouncedSave();
+            saveDataToJsonBin();
         }
     } catch (error) {
         console.error('Error uploading image:', error);
@@ -312,8 +295,7 @@ function handleAddGoal() {
         }
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
-        updateGoals();
-        debouncedSave();
+        updateGoals(); // This will trigger the progress/streak update
     }
 }
 addGoalBtn.addEventListener('click', handleAddGoal);
@@ -325,8 +307,7 @@ goalsList.addEventListener('click', (e) => {
         const index = parseInt(li.dataset.index, 10);
         currentData.goals[index].completed = !currentData.goals[index].completed;
         
-        updateGoals();
-        updateStreakLogic();
+        updateGoals(); // This will trigger the progress/streak update
     }
 });
 
@@ -360,7 +341,7 @@ modalSaveBtn.addEventListener('click', () => {
         }
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
-        debouncedSave();
+        saveDataToJsonBin();
         closeModal();
     }
 });
@@ -380,7 +361,7 @@ uncompletedCloseBtn.addEventListener('click', () => {
 uncompletedClearBtn.addEventListener('click', () => {
     currentData.uncompletedArchive = [];
     updateUncompletedModal();
-    debouncedSave();
+    saveDataToJsonBin();
 });
 
 uncompletedModal.addEventListener('click', (e) => {
