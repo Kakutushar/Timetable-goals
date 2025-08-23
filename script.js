@@ -1,9 +1,10 @@
-// --- Configuration --- //
+// --- Configuration ---
+// This is the final, working setup.
 const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_API_KEY_HERE';
 const JSONBIN_MASTER_KEY = '$2a$10$xgBIEIBCeftimziCGu53VudNEB5SID9WOD9phb2FAxezLz/IpjSIK';
 const JSONBIN_BIN_ID = '68a98b4343b1c97be9264f29';
 
-// --- DOM Element References --- //
+// --- DOM Element References ---
 const profileImage = document.getElementById('profile-image');
 const imagePlaceholder = document.getElementById('image-placeholder');
 const imageUploadInput = document.getElementById('image-upload-input');
@@ -20,7 +21,6 @@ const modalCellInfo = document.getElementById('modal-cell-info');
 const modalTextarea = document.getElementById('modal-textarea');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 const modalCancelBtn = document.getElementById('modal-cancel-btn');
-
 // New elements for uncompleted tasks
 const viewUncompletedBtn = document.getElementById('view-uncompleted-btn');
 const uncompletedModal = document.getElementById('uncompleted-modal');
@@ -28,7 +28,8 @@ const uncompletedList = document.getElementById('uncompleted-list');
 const uncompletedClearBtn = document.getElementById('uncompleted-clear-btn');
 const uncompletedCloseBtn = document.getElementById('uncompleted-close-btn');
 
-// --- Application State --- //
+
+// --- Application State ---
 const defaultData = {
     heading: "My Daily Dashboard",
     goals: [],
@@ -38,19 +39,20 @@ const defaultData = {
     timetable: {},
     imageUrl: ''
 };
-
 let currentData = { ...defaultData };
+
 let isEditingTimetable = false;
 let currentlyEditingCell = null;
-
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-// --- Data Handling with JSONBin.io --- //
+// --- Data Handling with JSONBin.io ---
 async function loadDataFromJsonBin() {
     try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+            headers: {
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            }
         });
 
         if (!response.ok) {
@@ -75,7 +77,7 @@ async function loadDataFromJsonBin() {
         console.error("Error loading data:", error);
         currentData = { ...defaultData };
     }
-
+    
     checkDailyReset();
     checkStreakOnLoad();
     updateUI();
@@ -85,20 +87,21 @@ function checkDailyReset() {
     const today = new Date().toDateString();
     if (currentData.goalsDate !== today) {
         const uncompleted = currentData.goals.filter(goal => !goal.completed);
-
+        
         if (uncompleted.length > 0) {
             if (!currentData.uncompletedArchive) {
                 currentData.uncompletedArchive = [];
             }
             currentData.uncompletedArchive.push(...uncompleted);
         }
-
+        
         currentData.goals = [];
         currentData.goalsDate = today;
-
+        
         saveDataToJsonBin();
     }
 }
+
 
 async function saveDataToJsonBin() {
     try {
@@ -116,7 +119,7 @@ async function saveDataToJsonBin() {
     }
 }
 
-// --- UI Update Functions --- //
+// --- UI Update Functions ---
 function updateUI() {
     updateHeading();
     updateGoals();
@@ -151,22 +154,28 @@ function updateGoals() {
             const li = document.createElement('li');
             li.className = goal.completed ? 'completed' : '';
             li.dataset.index = index;
-            li.innerHTML = `<div class="checkbox">${goal.completed ? '✔' : ''}</div><span>${goal.text}</span>`;
+            // Added the delete button to each list item
+            li.innerHTML = `
+                <div class="checkbox">${goal.completed ? '✔' : ''}</div>
+                <span>${goal.text}</span>
+                <button class="delete-goal-btn" data-index="${index}">&times;</button>
+            `;
             goalsList.appendChild(li);
         });
     }
     updateProgressAndStreak();
 }
 
-// --- NEW COMBINED LOGIC for Progress and Streak --- //
+// --- COMBINED LOGIC for Progress and Streak ---
 function updateProgressAndStreak() {
     const total = currentData.goals?.length || 0;
     let completed = 0;
     if (total > 0) {
         completed = currentData.goals.filter(g => g.completed).length;
     }
-
+    
     const percentage = (total === 0) ? 0 : (completed / total) * 100;
+    
     progressBar.style.width = `${percentage}%`;
 
     const todayString = new Date().toDateString();
@@ -182,10 +191,11 @@ function updateProgressAndStreak() {
             currentData.streak.lastCompleted = null;
         }
     }
-
+    
     updateStreakUI();
     saveDataToJsonBin();
 }
+
 
 function updateStreakUI() {
     streakCountEl.textContent = currentData.streak?.count || 0;
@@ -242,20 +252,10 @@ function updateTimetable() {
     });
 }
 
-// --- Event Listeners --- //
-
-// 🔥 FIX: Save heading immediately when typing
-mainHeading.addEventListener('input', () => {
+// --- Event Listeners ---
+mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
     saveDataToJsonBin();
-});
-
-// Prevent Enter from making new lines in heading
-mainHeading.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        mainHeading.blur();
-    }
 });
 
 imageUploadInput.addEventListener('change', async (e) => {
@@ -276,7 +276,7 @@ imageUploadInput.addEventListener('change', async (e) => {
         if (!response.ok) throw new Error('Image upload failed.');
 
         const result = await response.json();
-
+        
         if (result.data && result.data.url) {
             currentData.imageUrl = result.data.url;
             updateProfileImage();
@@ -303,12 +303,23 @@ addGoalBtn.addEventListener('click', handleAddGoal);
 newGoalInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleAddGoal());
 
 goalsList.addEventListener('click', (e) => {
-    const li = e.target.closest('li[data-index]');
-    if (li && currentData.goals) {
-        const index = parseInt(li.dataset.index, 10);
+    const target = e.target;
+    const li = target.closest('li[data-index]');
+
+    if (!li) return;
+
+    const index = parseInt(li.dataset.index, 10);
+
+    // Check if the delete button was clicked
+    if (target.classList.contains('delete-goal-btn')) {
+        currentData.goals.splice(index, 1); // Remove the goal from the array
+    } 
+    // Otherwise, assume the checkbox or text was clicked
+    else {
         currentData.goals[index].completed = !currentData.goals[index].completed;
-        updateGoals();
     }
+    
+    updateGoals();
 });
 
 editTimetableBtn.addEventListener('click', () => {
@@ -332,7 +343,7 @@ function closeModal() {
     modalOverlay.style.display = 'none';
     currentlyEditingCell = null;
 }
-
+    
 modalSaveBtn.addEventListener('click', () => {
     if (currentlyEditingCell) {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
@@ -349,26 +360,26 @@ modalSaveBtn.addEventListener('click', () => {
 modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && closeModal());
 
-// NEW Listeners for uncompleted modal
-viewUncompletedBtn?.addEventListener('click', () => {
+// Listeners for uncompleted modal
+viewUncompletedBtn.addEventListener('click', () => {
     uncompletedModal.style.display = 'flex';
 });
 
-uncompletedCloseBtn?.addEventListener('click', () => {
+uncompletedCloseBtn.addEventListener('click', () => {
     uncompletedModal.style.display = 'none';
 });
 
-uncompletedClearBtn?.addEventListener('click', () => {
+uncompletedClearBtn.addEventListener('click', () => {
     currentData.uncompletedArchive = [];
     updateUncompletedModal();
     saveDataToJsonBin();
 });
 
-uncompletedModal?.addEventListener('click', (e) => {
+uncompletedModal.addEventListener('click', (e) => {
     if (e.target === uncompletedModal) {
         uncompletedModal.style.display = 'none';
     }
 });
-
-// --- Initial Load --- //
+    
+// --- Initial Load ---
 loadDataFromJsonBin();
