@@ -4,7 +4,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // --- Supabase Configuration ---
 // Your personal Supabase project keys are now included.
 const SUPABASE_URL = 'https://joacwgzngnyugndztslo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvYWN3Z3puZ255dWduZHp0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzMyMDAsImV4cCI6MjA3MTUwOTIwMH0.SQO0EtGaFuPxlOXtIeDTaebakXvIjXNJD-YBfweivjg';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvYWN3Z3puZ255dWduZHp0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzMyMDAsImV4cCI6MjA3MTUwOTIwMH0.SQO0E[...]';
 
 // --- Initialize Supabase ---
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -107,6 +107,11 @@ function updateProfileImage() {
         profileImage.src = currentData.imageUrl;
         profileImage.classList.add('loaded');
         imagePlaceholder.style.display = 'none';
+        // Add error handling
+        profileImage.onerror = function() {
+            profileImage.classList.remove('loaded');
+            imagePlaceholder.style.display = 'flex';
+        };
     } else {
         profileImage.src = '';
         profileImage.classList.remove('loaded');
@@ -179,11 +184,12 @@ imageUploadInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file || !userId) return;
 
-    const filePath = `${userId}/${Date.now()}`; // Create a unique path for the file
+    // Use file.name for extension and uniqueness
+    const filePath = `${userId}/${Date.now()}_${file.name}`;
 
     // Upload the file to Supabase Storage
     const { error: uploadError } = await supabase.storage
-        .from('profile-images') // The bucket name we created
+        .from('profile-images')
         .upload(filePath, file);
 
     if (uploadError) {
@@ -192,15 +198,19 @@ imageUploadInput.addEventListener('change', async (e) => {
     }
 
     // Get the public URL of the uploaded image
-    const { data } = supabase.storage
+    const { data, error: urlError } = supabase.storage
         .from('profile-images')
         .getPublicUrl(filePath);
 
-    if (data) {
-        currentData.imageUrl = data.publicUrl;
-        updateProfileImage();
-        saveDataToSupabase();
+    if (urlError || !data?.publicUrl) {
+        console.error('Error getting public image URL:', urlError);
+        return;
     }
+
+    // Set the image URL and update UI
+    currentData.imageUrl = data.publicUrl;
+    updateProfileImage();
+    saveDataToSupabase();
 });
 
 function handleAddGoal() {
