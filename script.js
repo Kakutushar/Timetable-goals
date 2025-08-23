@@ -1,8 +1,8 @@
 // --- Configuration ---
 // This is the final, working setup.
 const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_API_KEY_HERE';
-const KVDB_BUCKET_ID = 'UGoddn3CHQ2YX3s5Rq8s4Y';
-const DATA_KEY = 'dashboardData'; // The key for our data within the bucket
+const JSONBIN_MASTER_KEY = '$2a$10$xgBIEIBCeftimziCGu53VudNEB5SID9WOD9phb2FAxezLz/IpjSIK';
+const JSONBIN_BIN_ID = '68a98b4343b1c97be9264f29';
 
 // --- DOM Element References ---
 const profileImage = document.getElementById('profile-image');
@@ -35,32 +35,47 @@ let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-// --- NEW: Debounce variable ---
+// --- Debounce variable ---
 let debounceTimeout;
 
-// --- Data Handling with kvdb.io ---
-async function loadDataFromKVDB() {
+// --- Data Handling with JSONBin.io ---
+async function loadDataFromJsonBin() {
     try {
-        const response = await fetch(`https://kvdb.io/${KVDB_BUCKET_ID}/${DATA_KEY}`);
-        if (response.status === 404) { // Not found, which is normal on first run
-            console.log("No data found, using defaults.");
-            saveDataToKVDB(); // Save the initial default state
-        } else if (response.ok) {
-            const data = await response.json();
-            currentData = data;
-        } else {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+            headers: {
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            }
+        });
+        if (response.status === 404) { // Handle case where bin is created but empty
+             console.log("Bin is empty, saving initial data.");
+             await saveDataToJsonBin(); // Save the default structure first
+        } else if (!response.ok) {
             throw new Error('Could not fetch data.');
+        }
+        
+        const data = await response.json();
+        // The data is nested under a 'record' property in the response
+        if (data.record && Object.keys(data.record).length > 0) {
+            currentData = data.record;
+        } else {
+             console.log("No data record found, using defaults and saving.");
+             await saveDataToJsonBin(); // Save default if record is empty {}
         }
     } catch (error) {
         console.error("Error loading data:", error);
+        // If the bin is new or there's an error, it will use the default data
     }
     updateUI();
 }
 
-async function saveDataToKVDB() {
+async function saveDataToJsonBin() {
     try {
-        await fetch(`https://kvdb.io/${KVDB_BUCKET_ID}/${DATA_KEY}`, {
-            method: 'POST',
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            },
             body: JSON.stringify(currentData),
         });
         console.log("Data saved successfully.");
@@ -69,13 +84,10 @@ async function saveDataToKVDB() {
     }
 }
 
-// --- NEW: Debounced Save Function ---
-// This function ensures we don't save on every single change, which prevents race conditions.
+// --- Debounced Save Function ---
 function debouncedSave() {
-    // Clear any previous pending save
     clearTimeout(debounceTimeout);
-    // Set a new save to run after 1 second of inactivity
-    debounceTimeout = setTimeout(saveDataToKVDB, 1000);
+    debounceTimeout = setTimeout(saveDataToJsonBin, 1000);
 }
 
 
@@ -162,7 +174,7 @@ function updateTimetable() {
 // --- Event Listeners ---
 mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
-    debouncedSave(); // CHANGED
+    debouncedSave();
 });
 
 imageUploadInput.addEventListener('change', async (e) => {
@@ -187,7 +199,7 @@ imageUploadInput.addEventListener('change', async (e) => {
         if (result.data && result.data.url) {
             currentData.imageUrl = result.data.url;
             updateProfileImage();
-            debouncedSave(); // CHANGED
+            debouncedSave();
         }
     } catch (error) {
         console.error('Error uploading image:', error);
@@ -201,7 +213,7 @@ function handleAddGoal() {
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
         updateGoals();
-        debouncedSave(); // CHANGED
+        debouncedSave();
     }
 }
 addGoalBtn.addEventListener('click', handleAddGoal);
@@ -220,7 +232,7 @@ goalsList.addEventListener('click', (e) => {
         }
         updateGoals();
         updateStreak();
-        debouncedSave(); // CHANGED
+        debouncedSave();
     }
 });
 
@@ -251,7 +263,7 @@ modalSaveBtn.addEventListener('click', () => {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
-        debouncedSave(); // CHANGED
+        debouncedSave();
         closeModal();
     }
 });
@@ -260,4 +272,4 @@ modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && closeModal());
     
 // --- Initial Load ---
-loadDataFromKVDB();
+loadDataFromJsonBin();
