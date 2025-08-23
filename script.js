@@ -1,12 +1,8 @@
-// Import the Supabase client library
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-// --- Supabase Configuration ---
-const SUPABASE_URL = 'https://joacwgzngnyugndztslo.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvYWN3Z3puZ255dWduZHp0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzMyMDAsImV4cCI6MjA3MTUwOTIwMH0.SQO0E[...]';
-
-// --- Initialize Supabase ---
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --- Configuration ---
+// Your personal Gist ID and GitHub Token are now included.
+const GIST_ID = '55a239249b3071a56dceb5ecb632981d';
+const GITHUB_TOKEN = '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';
+const FILENAME = 'dashboard-data.json'; // The filename you used in your Gist
 
 // --- DOM Element References ---
 const profileImage = document.getElementById('profile-image');
@@ -27,56 +23,53 @@ const modalSaveBtn = document.getElementById('modal-save-btn');
 const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
 // --- Application State ---
-let userId = null;
 let currentData = {
     heading: "My Daily Dashboard",
     goals: [],
     streak: { count: 0, lastCompleted: null },
     timetable: {},
-    imageUrl: ''
+    imageUrl: '' // This will be a long Base64 string
 };
 let isEditingTimetable = false;
 let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-// --- User Identity (No Login) ---
-function getUserId() {
-    let id = localStorage.getItem('supabaseUserId');
-    if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem('supabaseUserId', id);
-    }
-    return id;
-}
+// --- Data Handling with GitHub Gist ---
+async function loadDataFromGist() {
+    try {
+        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+        if (!response.ok) throw new Error('Could not fetch Gist data.');
+        
+        const gist = await response.json();
+        const fileContent = gist.files[FILENAME]?.content;
 
-// --- Data Handling with Supabase ---
-async function loadDataFromSupabase() {
-    if (!userId) return;
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    if (error && error.code !== 'PGRST116') {
-        console.error('Error loading data:', error);
-    } else if (data) {
-        currentData = data.app_data;
-    } else {
-        await saveDataToSupabase();
+        if (fileContent && fileContent !== '{}') { // Check if content is not empty
+            currentData = JSON.parse(fileContent);
+        }
+    } catch (error) {
+        console.error("Error loading data:", error);
+        // If it fails to load (e.g., first time use), it will just use the default data.
     }
     updateUI();
 }
 
-async function saveDataToSupabase() {
-    if (!userId) return;
+async function saveDataToGist() {
     try {
-        const { error } = await supabase
-            .from('profiles')
-            .upsert({ id: userId, app_data: currentData });
-        if (error) throw error;
+        await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+            },
+            body: JSON.stringify({
+                files: {
+                    [FILENAME]: {
+                        content: JSON.stringify(currentData, null, 2), // Pretty print the JSON
+                    },
+                },
+            }),
+        });
     } catch (error) {
         console.error("Error saving data:", error);
     }
@@ -100,11 +93,6 @@ function updateProfileImage() {
         profileImage.src = currentData.imageUrl;
         profileImage.classList.add('loaded');
         imagePlaceholder.style.display = 'none';
-        profileImage.onerror = function() {
-            profileImage.classList.remove('loaded');
-            imagePlaceholder.style.display = 'flex';
-            console.error("Image failed to load:", profileImage.src);
-        };
     } else {
         profileImage.src = '';
         profileImage.classList.remove('loaded');
@@ -170,48 +158,20 @@ function updateTimetable() {
 // --- Event Listeners ---
 mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
-    saveDataToSupabase();
+    saveDataToGist();
 });
 
-imageUploadInput.addEventListener('change', async (e) => {
+imageUploadInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
-    if (!file || !userId) {
-        console.error("No file or userId missing");
-        return;
-    }
-
-    const filePath = `${userId}/${Date.now()}_${file.name}`;
-
-    // Upload the file to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-        .from('profile-images')
-        .upload(filePath, file);
-
-    if (uploadError) {
-        console.error('Error uploading image:', uploadError);
-        return;
-    } else {
-        console.log('Upload successful:', filePath);
-    }
-
-    // Get the public URL of the uploaded image
-    const { data, error: urlError } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath);
-
-    if (urlError) {
-        console.error('Error getting public image URL:', urlError);
-        return;
-    }
-
-    if (data && data.publicUrl) {
-        console.log("Public URL after upload:", data.publicUrl);
-        currentData.imageUrl = data.publicUrl;
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        currentData.imageUrl = event.target.result; // The result is the Base64 string
         updateProfileImage();
-        saveDataToSupabase();
-    } else {
-        console.error('No public URL returned:', data);
-    }
+        saveDataToGist();
+    };
+    reader.readAsDataURL(file);
 });
 
 function handleAddGoal() {
@@ -220,7 +180,7 @@ function handleAddGoal() {
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
         updateGoals();
-        saveDataToSupabase();
+        saveDataToGist();
     }
 }
 addGoalBtn.addEventListener('click', handleAddGoal);
@@ -239,7 +199,7 @@ goalsList.addEventListener('click', (e) => {
         }
         updateGoals();
         updateStreak();
-        saveDataToSupabase();
+        saveDataToGist();
     }
 });
 
@@ -264,20 +224,19 @@ function closeModal() {
     modalOverlay.style.display = 'none';
     currentlyEditingCell = null;
 }
-
+    
 modalSaveBtn.addEventListener('click', () => {
     if (currentlyEditingCell) {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
-        saveDataToSupabase();
+        saveDataToGist();
         closeModal();
     }
 });
 
 modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && closeModal());
-
+    
 // --- Initial Load ---
-userId = getUserId();
-loadDataFromSupabase();
+loadDataFromGist();
