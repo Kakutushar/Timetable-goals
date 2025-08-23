@@ -49,23 +49,38 @@ async function loadDataFromJsonBin() {
                 'X-Master-Key': JSONBIN_MASTER_KEY
             }
         });
+
         if (!response.ok) {
             // If the bin doesn't exist or there's an error, create it with default data.
             console.log("No data found or error fetching, creating initial data.");
-            await saveDataToJsonBin();
+            currentData = { ...defaultData }; // Ensure currentData is reset to default
+            await saveDataToJsonBin(); // Save the clean default structure
         } else {
             const data = await response.json();
-            // **CRITICAL FIX:** Safely merge the loaded data with the default structure.
-            // This ensures that if the loaded data is empty or missing parts, the app won't crash.
-            if (data.record && typeof data.record === 'object') {
-                currentData = { ...defaultData, ...data.record };
+            // **CRITICAL FIX:** Check if the record is a valid, non-null object before merging.
+            if (data.record && typeof data.record === 'object' && data.record !== null && Object.keys(data.record).length > 0) {
+                // Safely merge the loaded data with the default structure.
+                // This ensures that if the loaded data is missing properties, they are added from the default.
+                currentData = {
+                    ...defaultData,
+                    ...data.record,
+                    // Also merge nested objects to be extra safe
+                    streak: { ...defaultData.streak, ...(data.record.streak || {}) },
+                };
+            } else {
+                // If the record is empty, null, or not an object, use the default data.
+                console.log("Invalid or empty record found, using default data.");
+                currentData = { ...defaultData };
+                await saveDataToJsonBin(); // Overwrite the bad data with good data
             }
         }
     } catch (error) {
         console.error("Error loading data:", error);
+        currentData = { ...defaultData }; // In case of any error, fall back to defaults
     }
     updateUI();
 }
+
 
 async function saveDataToJsonBin() {
     try {
@@ -231,6 +246,7 @@ goalsList.addEventListener('click', (e) => {
         const allCompleted = currentData.goals.every(g => g.completed);
         const today = new Date().toDateString();
         if (allCompleted && currentData.streak.lastCompleted !== today) {
+            if(!currentData.streak) currentData.streak = { count: 0, lastCompleted: null };
             currentData.streak.count++;
             currentData.streak.lastCompleted = today;
         }
@@ -280,3 +296,4 @@ modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && close
     
 // --- Initial Load ---
 loadDataFromJsonBin();
+
