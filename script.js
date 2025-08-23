@@ -23,13 +23,16 @@ const modalSaveBtn = document.getElementById('modal-save-btn');
 const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
 // --- Application State ---
-let currentData = {
+// This is the default structure of our data.
+const defaultData = {
     heading: "My Daily Dashboard",
     goals: [],
     streak: { count: 0, lastCompleted: null },
     timetable: {},
     imageUrl: ''
 };
+let currentData = { ...defaultData }; // Start with a copy of the default data
+
 let isEditingTimetable = false;
 let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
@@ -46,24 +49,20 @@ async function loadDataFromJsonBin() {
                 'X-Master-Key': JSONBIN_MASTER_KEY
             }
         });
-        if (response.status === 404) { // Handle case where bin is created but empty
-             console.log("Bin is empty, saving initial data.");
-             await saveDataToJsonBin(); // Save the default structure first
-        } else if (!response.ok) {
-            throw new Error('Could not fetch data.');
-        }
-        
-        const data = await response.json();
-        // The data is nested under a 'record' property in the response
-        if (data.record && Object.keys(data.record).length > 0) {
-            currentData = data.record;
+        if (!response.ok) {
+            // If the bin doesn't exist or there's an error, create it with default data.
+            console.log("No data found or error fetching, creating initial data.");
+            await saveDataToJsonBin();
         } else {
-             console.log("No data record found, using defaults and saving.");
-             await saveDataToJsonBin(); // Save default if record is empty {}
+            const data = await response.json();
+            // **CRITICAL FIX:** Safely merge the loaded data with the default structure.
+            // This ensures that if the loaded data is empty or missing parts, the app won't crash.
+            if (data.record && typeof data.record === 'object') {
+                currentData = { ...defaultData, ...data.record };
+            }
         }
     } catch (error) {
         console.error("Error loading data:", error);
-        // If the bin is new or there's an error, it will use the default data
     }
     updateUI();
 }
@@ -118,6 +117,7 @@ function updateProfileImage() {
 
 function updateGoals() {
     goalsList.innerHTML = '';
+    // Ensure goals is always an array before trying to use it.
     if (!currentData.goals || currentData.goals.length === 0) {
         goalsList.innerHTML = '<li>No goals yet. Add one below!</li>';
     } else {
@@ -133,7 +133,7 @@ function updateGoals() {
 }
 
 function updateProgressBar() {
-    const total = currentData.goals.length;
+    const total = currentData.goals?.length || 0;
     if (total === 0) {
         progressBar.style.width = '0%';
         return;
@@ -144,7 +144,7 @@ function updateProgressBar() {
 
 function updateStreak() {
     const today = new Date().toDateString();
-    const lastCompleted = currentData.streak.lastCompleted;
+    const lastCompleted = currentData.streak?.lastCompleted;
     if (lastCompleted) {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -152,7 +152,7 @@ function updateStreak() {
             currentData.streak.count = 0;
         }
     }
-    streakCountEl.textContent = currentData.streak.count;
+    streakCountEl.textContent = currentData.streak?.count || 0;
 }
 
 function updateTimetable() {
@@ -164,7 +164,7 @@ function updateTimetable() {
             const cell = document.createElement('td');
             cell.dataset.time = time;
             cell.dataset.day = day;
-            cell.textContent = currentData.timetable[`${day}-${time}`] || '';
+            cell.textContent = currentData.timetable?.[`${day}-${time}`] || '';
             row.appendChild(cell);
         });
         timetableBody.appendChild(row);
@@ -210,6 +210,10 @@ imageUploadInput.addEventListener('change', async (e) => {
 function handleAddGoal() {
     const text = newGoalInput.value.trim();
     if (text) {
+        // Ensure goals array exists before pushing
+        if (!currentData.goals) {
+            currentData.goals = [];
+        }
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
         updateGoals();
@@ -221,7 +225,7 @@ newGoalInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleAddG
 
 goalsList.addEventListener('click', (e) => {
     const li = e.target.closest('li[data-index]');
-    if (li) {
+    if (li && currentData.goals) {
         const index = parseInt(li.dataset.index, 10);
         currentData.goals[index].completed = !currentData.goals[index].completed;
         const allCompleted = currentData.goals.every(g => g.completed);
@@ -261,6 +265,9 @@ function closeModal() {
 modalSaveBtn.addEventListener('click', () => {
     if (currentlyEditingCell) {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
+        if (!currentData.timetable) {
+            currentData.timetable = {};
+        }
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
         debouncedSave();
