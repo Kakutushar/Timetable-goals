@@ -1,17 +1,18 @@
-/* --- Basic Setup & Variables --- */
+/* --- Authentic "Claude" Theme --- */
 :root {
-    --primary-color: #4A90E2;
-    --background-color: #f7f9fc;
-    --card-background: #ffffff;
-    --text-color: #333;
-    --subtle-text: #777;
-    --border-color: #e0e0e0;
-    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --border-radius: 12px;
+    --primary-color: #D98A76; /* Muted Orange/Terracotta */
+    --background-color: #FDFCFB; /* Warm Off-White */
+    --card-background: #FFFFFF;
+    --text-color: #4B413A; /* Dark Brown/Gray */
+    --subtle-text: #8E837C; /* Lighter Brown/Gray */
+    --border-color: #F0EBE8; /* Very Light Border */
+    --danger-color: #D93A3A;
+    --shadow: none;
+    --border-radius: 10px;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Lora', serif;
     background-color: var(--background-color);
     color: var(--text-color);
     margin: 0;
@@ -26,102 +27,125 @@ body {
 /* --- Main Layout --- */
 #app-container {
     display: flex;
-    gap: 2rem;
+    gap: 2.5rem;
     width: 100%;
     max-width: 1400px;
 }
 
 .sidebar {
-    flex: 0 0 220px;
+    flex: 0 0 350px;
 }
 
 .main-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 header h1 {
     font-size: 2.5rem;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
-    outline: none; /* Removes outline when editing */
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    outline: none;
 }
 
 /* --- Image Uploader --- */
 .image-uploader {
-    text-align: center;
+    position: relative;
+    width: 100%;
+    height: 250px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: #F9F6F4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.image-uploader:hover {
+    border-color: var(--primary-color);
+    background-color: #F5F1EE;
 }
 
 #profile-image {
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border: 5px solid var(--card-background);
-    box-shadow: var(--shadow);
-    margin-bottom: 1rem;
-    background-color: #e2e8f0;
+    display: none;
 }
 
-.upload-btn {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
+#profile-image.loaded {
+    display: block;
 }
 
-.upload-btn:hover {
-    background-color: #357ABD;
+.image-placeholder {
+    color: #D3C9C4;
+    transition: color 0.2s;
+    display: flex;
+}
+
+.image-uploader:hover .image-placeholder {
+    color: var(--primary-color);
+}
+
+.image-placeholder svg {
+    width: 44px;
+    height: 44px;
 }
 
 /* --- Reusable Card Styles --- */
 .daily-goals-card, .streak-card, .timetable-card {
     background-color: var(--card-background);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
+    padding: 1.5rem 2rem;
+    border: 1px solid var(--border-color);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
 }
 
 .card-header h3 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--subtle-text);
+    flex-shrink: 0; /* Prevents h3 from shrinking */
 }
 
 /* --- Goals & Streak Section --- */
 .goals-and-streak {
     display: grid;
-    grid-template-columns: 1fr 200px;
-    gap: 1.5rem;
+    grid-template-columns: 1fr 220px;
+    gap: 2rem;
 }
 
 /* Progress Bar */
 .progress-container {
-    width: 150px;
-    height: 10px;
-    background-color: #e0e0e0;
-    border-radius: 5px;
+    width: 100%;
+    height: 6px;
+    background-color: #F0EBE8;
+    border-radius: 3px;
     overflow: hidden;
+    margin-left: auto; /* Pushes progress bar to the right */
+    max-width: 120px;
 }
 
 #progress-bar {
     height: 100%;
-    width: 0%; /* Updated by JS */
-    background-color: #5cb85c;
-    border-radius: 5px;
+    width: 0%;
+    background-color: var(--primary-color);
+    border-radius: 3px;
     transition: width 0.3s ease-in-out;
 }
 
@@ -137,9 +161,10 @@ header h1 {
 #goals-list li {
     display: flex;
     align-items: center;
-    padding: 0.75rem 0;
+    padding: 0.8rem 0;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
+    font-size: 1.05rem;
 }
 
 #goals-list li:last-child {
@@ -152,21 +177,22 @@ header h1 {
 }
 
 #goals-list li .checkbox {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--border-color);
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #D3C9C4;
     border-radius: 50%;
     margin-right: 1rem;
     display: flex;
     justify-content: center;
     align-items: center;
     transition: all 0.2s;
+    font-size: 12px;
+    color: white;
 }
 
 #goals-list li.completed .checkbox {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    color: white;
 }
 
 /* Add Goal Form */
@@ -179,12 +205,15 @@ header h1 {
     flex-grow: 1;
     border: 1px solid var(--border-color);
     border-radius: 8px 0 0 8px;
-    padding: 0.75rem;
+    padding: 0.65rem 1rem;
     font-size: 1rem;
     outline: none;
+    background-color: #FDFCFB;
+    font-family: 'Lora', serif;
 }
 #new-goal-input:focus {
     border-color: var(--primary-color);
+    background-color: white;
 }
 
 #add-goal-btn {
@@ -192,14 +221,14 @@ header h1 {
     background-color: var(--primary-color);
     color: white;
     font-size: 1.5rem;
-    font-weight: bold;
-    padding: 0 1.25rem;
+    font-weight: 600;
+    padding: 0 1rem;
     border-radius: 0 8px 8px 0;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 #add-goal-btn:hover {
-    background-color: #357ABD;
+    background-color: #C87A66;
 }
 
 /* Streak Counter */
@@ -215,7 +244,7 @@ header h1 {
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    border: 8px solid var(--primary-color);
+    border: 6px solid #F0EBE8;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -224,29 +253,40 @@ header h1 {
 }
 
 #streak-count {
-    font-size: 3rem;
+    font-size: 2.75rem;
     font-weight: 700;
     line-height: 1;
+    color: var(--primary-color);
+}
+
+.streak-circle small {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--subtle-text);
+    margin-top: 4px;
 }
 
 /* --- Timetable --- */
-#edit-timetable-btn {
-    background-color: #f0f0f0;
+#edit-timetable-btn, .secondary-btn {
+    background-color: #F9F6F4;
     border: 1px solid var(--border-color);
     color: var(--text-color);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s;
+    font-size: 0.875rem;
+    font-family: 'Lora', serif;
 }
-#edit-timetable-btn:hover {
-    background-color: #e0e0e0;
+#edit-timetable-btn:hover, .secondary-btn:hover {
+    background-color: #F5F1EE;
+    border-color: #D3C9C4;
 }
 #edit-timetable-btn.editing {
-    background-color: #c82333;
+    background-color: #D93A3A;
     color: white;
-    border-color: #c82333;
+    border-color: #D93A3A;
 }
 
 #timetable {
@@ -260,27 +300,30 @@ header h1 {
     padding: 0.75rem;
     text-align: center;
     vertical-align: middle;
-    height: 60px;
+    height: 50px;
 }
 
 #timetable th {
-    background-color: #f9f9f9;
-    font-weight: 500;
+    background-color: #F9F6F4;
+    font-weight: 600;
+    color: var(--subtle-text);
+    font-size: 0.875rem;
 }
 
 #timetable td {
     cursor: default;
-    white-space: pre-wrap; /* Allows line breaks */
+    white-space: pre-wrap;
     word-break: break-word;
+    font-size: 0.95rem;
 }
 
 #timetable.editable td {
     cursor: pointer;
-    background-color: #eef5ff;
+    background-color: #F9F6F4;
     transition: background-color 0.2s;
 }
 #timetable.editable td:hover {
-    background-color: #d4e7ff;
+    background-color: #F5F1EE;
 }
 
 /* --- Modal --- */
@@ -290,31 +333,32 @@ header h1 {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(75, 65, 58, 0.7);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(4px);
 }
 
 .modal-content {
     background: var(--card-background);
     padding: 2rem;
     border-radius: var(--border-radius);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     width: 90%;
     max-width: 500px;
     animation: fadeIn 0.3s ease-out;
+    border: 1px solid var(--border-color);
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
+    from { opacity: 0; transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
 }
 
 .modal-content h3 {
     margin-top: 0;
+    font-weight: 600;
 }
 
 #modal-textarea {
@@ -322,26 +366,34 @@ header h1 {
     box-sizing: border-box;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 6px;
     margin: 1rem 0;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Lora', serif;
     font-size: 1rem;
     resize: vertical;
+    background-color: #FDFCFB;
+}
+#modal-textarea:focus {
+    background-color: white;
+    border-color: var(--primary-color);
+    outline: none;
 }
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+    margin-top: 1.5rem;
 }
 
 .modal-actions button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
+    padding: 0.6rem 1.25rem;
+    border-radius: 6px;
     border: none;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.2s;
+    font-family: 'Lora', serif;
 }
 
 #modal-save-btn {
@@ -349,15 +401,41 @@ header h1 {
     color: white;
 }
 #modal-save-btn:hover {
-    background-color: #357ABD;
+    background-color: #C87A66;
 }
 
-#modal-cancel-btn {
-    background-color: #f0f0f0;
+#modal-cancel-btn, #uncompleted-close-btn {
+    background-color: #F0EBE8;
+    color: var(--text-color);
 }
-#modal-cancel-btn:hover {
-    background-color: #e0e0e0;
+#modal-cancel-btn:hover, #uncompleted-close-btn:hover {
+    background-color: #E6DFDB;
 }
+
+.danger-btn {
+    background-color: var(--danger-color);
+    color: white;
+}
+.danger-btn:hover {
+    background-color: #b82e2e;
+}
+
+/* Styles for Uncompleted List */
+#uncompleted-list {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#uncompleted-list li {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--subtle-text);
+}
+#uncompleted-list li:last-child {
+    border-bottom: none;
+}
+
 
 /* --- Responsive Design --- */
 @media (max-width: 1024px) {
@@ -372,19 +450,12 @@ header h1 {
         width: 100%;
         display: flex;
         justify-content: center;
+        order: 2; 
+    }
+    .main-content {
+        order: 1;
     }
     .goals-and-streak {
         grid-template-columns: 1fr;
-    }
-    .streak-card {
-        padding: 1rem;
-    }
-    .streak-circle {
-        width: 100px;
-        height: 100px;
-        border-width: 6px;
-    }
-    #streak-count {
-        font-size: 2.5rem;
     }
 }
