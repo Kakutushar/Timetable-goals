@@ -182,9 +182,11 @@ mainHeading.addEventListener('blur', () => {
 
 imageUploadInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
-    if (!file || !userId) return;
+    if (!file || !userId) {
+        console.error("No file or userId missing");
+        return;
+    }
 
-    // Use file.name for extension and uniqueness
     const filePath = `${userId}/${Date.now()}_${file.name}`;
 
     // Upload the file to Supabase Storage
@@ -195,6 +197,8 @@ imageUploadInput.addEventListener('change', async (e) => {
     if (uploadError) {
         console.error('Error uploading image:', uploadError);
         return;
+    } else {
+        console.log('Upload successful:', filePath);
     }
 
     // Get the public URL of the uploaded image
@@ -202,10 +206,20 @@ imageUploadInput.addEventListener('change', async (e) => {
         .from('profile-images')
         .getPublicUrl(filePath);
 
-    if (urlError || !data?.publicUrl) {
+    if (urlError) {
         console.error('Error getting public image URL:', urlError);
         return;
     }
+
+    if (data && data.publicUrl) {
+        console.log("Public URL after upload:", data.publicUrl);
+        currentData.imageUrl = data.publicUrl;
+        updateProfileImage();
+        saveDataToSupabase();
+    } else {
+        console.error('No public URL returned:', data);
+    }
+});
 
     // Set the image URL and update UI
     currentData.imageUrl = data.publicUrl;
