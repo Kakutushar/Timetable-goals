@@ -1,8 +1,8 @@
 // --- Configuration ---
-// Your personal Gist ID and GitHub Token are now included.
-const GIST_ID = '55a239249b3071a56dceb5ecb632981d';
-const GITHUB_TOKEN = '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';
-const FILENAME = 'dashboard-data.json'; // The filename you used in your Gist
+// This is the final, working setup.
+const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_API_KEY_HERE';
+const KVDB_BUCKET_ID = 'UGoddn3CHQ2YX3s5Rq8s4Y';
+const DATA_KEY = 'dashboardData'; // The key for our data within the bucket
 
 // --- DOM Element References ---
 const profileImage = document.getElementById('profile-image');
@@ -28,47 +28,37 @@ let currentData = {
     goals: [],
     streak: { count: 0, lastCompleted: null },
     timetable: {},
-    imageUrl: '' // This will be a long Base64 string
+    imageUrl: ''
 };
 let isEditingTimetable = false;
 let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-// --- Data Handling with GitHub Gist ---
-async function loadDataFromGist() {
+// --- Data Handling with kvdb.io ---
+async function loadDataFromKVDB() {
     try {
-        const response = await fetch(`https://api.github.com/gists/${GIST_ID}`);
-        if (!response.ok) throw new Error('Could not fetch Gist data.');
-        
-        const gist = await response.json();
-        const fileContent = gist.files[FILENAME]?.content;
-
-        if (fileContent && fileContent !== '{}') { // Check if content is not empty
-            currentData = JSON.parse(fileContent);
+        const response = await fetch(`https://kvdb.io/${KVDB_BUCKET_ID}/${DATA_KEY}`);
+        if (response.status === 404) { // Not found, which is normal on first run
+            console.log("No data found, using defaults.");
+            saveDataToKVDB(); // Save the initial default state
+        } else if (response.ok) {
+            const data = await response.json();
+            currentData = data;
+        } else {
+            throw new Error('Could not fetch data.');
         }
     } catch (error) {
         console.error("Error loading data:", error);
-        // If it fails to load (e.g., first time use), it will just use the default data.
     }
     updateUI();
 }
 
-async function saveDataToGist() {
+async function saveDataToKVDB() {
     try {
-        await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json',
-            },
-            body: JSON.stringify({
-                files: {
-                    [FILENAME]: {
-                        content: JSON.stringify(currentData, null, 2), // Pretty print the JSON
-                    },
-                },
-            }),
+        await fetch(`https://kvdb.io/${KVDB_BUCKET_ID}/${DATA_KEY}`, {
+            method: 'POST',
+            body: JSON.stringify(currentData),
         });
     } catch (error) {
         console.error("Error saving data:", error);
@@ -158,20 +148,37 @@ function updateTimetable() {
 // --- Event Listeners ---
 mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
-    saveDataToGist();
+    saveDataToKVDB();
 });
 
-imageUploadInput.addEventListener('change', (e) => {
+imageUploadInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        currentData.imageUrl = event.target.result; // The result is the Base64 string
-        updateProfileImage();
-        saveDataToGist();
-    };
-    reader.readAsDataURL(file);
+
+    imagePlaceholder.innerHTML = '<span>Uploading...</span>';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) throw new Error('Image upload failed.');
+
+        const result = await response.json();
+        
+        if (result.data && result.data.url) {
+            currentData.imageUrl = result.data.url;
+            await saveDataToKVDB();
+            updateProfileImage();
+        }
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        imagePlaceholder.innerHTML = '<span>Upload failed</span>';
+    }
 });
 
 function handleAddGoal() {
@@ -180,7 +187,7 @@ function handleAddGoal() {
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
         updateGoals();
-        saveDataToGist();
+        saveDataToKVDB();
     }
 }
 addGoalBtn.addEventListener('click', handleAddGoal);
@@ -199,7 +206,7 @@ goalsList.addEventListener('click', (e) => {
         }
         updateGoals();
         updateStreak();
-        saveDataToGist();
+        saveDataToKVDB();
     }
 });
 
@@ -230,7 +237,7 @@ modalSaveBtn.addEventListener('click', () => {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
-        saveDataToGist();
+        saveDataToKVDB();
         closeModal();
     }
 });
@@ -239,4 +246,4 @@ modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && closeModal());
     
 // --- Initial Load ---
-loadDataFromGist();
+loadDataFromKVDB();
