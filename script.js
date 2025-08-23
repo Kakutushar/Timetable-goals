@@ -1,4 +1,5 @@
 // --- Configuration ---
+// This is the final, working setup.
 const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_API_KEY_HERE';
 const JSONBIN_MASTER_KEY = '$2a$10$xgBIEIBCeftimziCGu53VudNEB5SID9WOD9phb2FAxezLz/IpjSIK';
 const JSONBIN_BIN_ID = '68a98b4343b1c97be9264f29';
@@ -95,6 +96,10 @@ function checkDailyReset() {
         
         // Add them to the archive
         if (uncompleted.length > 0) {
+            // Ensure archive exists
+            if (!currentData.uncompletedArchive) {
+                currentData.uncompletedArchive = [];
+            }
             currentData.uncompletedArchive.push(...uncompleted);
         }
         
@@ -185,7 +190,6 @@ function updateStreakUI() {
     streakCountEl.textContent = currentData.streak?.count || 0;
 }
 
-// NEW: Function to update the uncompleted tasks modal
 function updateUncompletedModal() {
     uncompletedList.innerHTML = '';
     if (!currentData.uncompletedArchive || currentData.uncompletedArchive.length === 0) {
@@ -199,35 +203,45 @@ function updateUncompletedModal() {
     }
 }
 
-// --- Streak Logic ---
+// --- CORRECTED Streak Logic ---
 function checkStreakOnLoad() {
-    const today = new Date().toDateString();
-    const lastCompleted = currentData.streak?.lastCompleted;
+    if (!currentData.streak || !currentData.streak.lastCompleted) {
+        return; // No streak to check
+    }
 
-    if (lastCompleted) {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (lastCompleted !== today && lastCompleted !== yesterday.toDateString()) {
-            currentData.streak.count = 0;
-            currentData.streak.lastCompleted = null;
-            debouncedSave();
-        }
+    // Normalize today to the start of the day for accurate comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Normalize yesterday to the start of the day
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    // Normalize the last completed date from the saved string
+    const lastCompletedDate = new Date(currentData.streak.lastCompleted);
+    lastCompletedDate.setHours(0, 0, 0, 0);
+
+    // If the last completion was not today and not yesterday, the streak is broken.
+    if (lastCompletedDate.getTime() !== today.getTime() && lastCompletedDate.getTime() !== yesterday.getTime()) {
+        console.log("Streak broken!");
+        currentData.streak.count = 0;
+        currentData.streak.lastCompleted = null;
+        debouncedSave(); // Save the reset streak
     }
 }
 
 function updateStreakLogic() {
-    const today = new Date().toDateString();
+    const todayString = new Date().toDateString();
     const allCompleted = currentData.goals?.length > 0 && currentData.goals.every(g => g.completed);
     
     if (allCompleted) {
-        if (currentData.streak.lastCompleted !== today) {
+        if (currentData.streak.lastCompleted !== todayString) {
             currentData.streak.count++;
-            currentData.streak.lastCompleted = today;
+            currentData.streak.lastCompleted = todayString;
         }
     } 
     else {
-        if (currentData.streak.lastCompleted === today) {
+        if (currentData.streak.lastCompleted === todayString) {
             currentData.streak.count--;
             currentData.streak.lastCompleted = null;
         }
