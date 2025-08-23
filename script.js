@@ -2,7 +2,6 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 // --- Supabase Configuration ---
-// Your personal Supabase project keys are now included.
 const SUPABASE_URL = 'https://joacwgzngnyugndztslo.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpvYWN3Z3puZ255dWduZHp0c2xvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzMyMDAsImV4cCI6MjA3MTUwOTIwMH0.SQO0E[...]';
 
@@ -42,12 +41,10 @@ const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "2
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // --- User Identity (No Login) ---
-// We create a unique ID for the user and store it in the browser's localStorage.
-// This acts like an anonymous login, persisting their identity on this device.
 function getUserId() {
     let id = localStorage.getItem('supabaseUserId');
     if (!id) {
-        id = crypto.randomUUID(); // Generate a new unique ID
+        id = crypto.randomUUID();
         localStorage.setItem('supabaseUserId', id);
     }
     return id;
@@ -57,20 +54,17 @@ function getUserId() {
 async function loadDataFromSupabase() {
     if (!userId) return;
 
-    // Select the row from our 'profiles' table that matches the user's ID.
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single(); // We expect only one row
+        .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
+    if (error && error.code !== 'PGRST116') {
         console.error('Error loading data:', error);
     } else if (data) {
-        // If data exists, update our application state.
         currentData = data.app_data;
     } else {
-        // If no data exists for this user, save the default data to create the row.
         await saveDataToSupabase();
     }
     updateUI();
@@ -79,7 +73,6 @@ async function loadDataFromSupabase() {
 async function saveDataToSupabase() {
     if (!userId) return;
     try {
-        // 'upsert' will create the row if it doesn't exist, or update it if it does.
         const { error } = await supabase
             .from('profiles')
             .upsert({ id: userId, app_data: currentData });
@@ -89,7 +82,7 @@ async function saveDataToSupabase() {
     }
 }
 
-// --- UI Update Functions (No changes here) ---
+// --- UI Update Functions ---
 function updateUI() {
     updateHeading();
     updateGoals();
@@ -107,10 +100,10 @@ function updateProfileImage() {
         profileImage.src = currentData.imageUrl;
         profileImage.classList.add('loaded');
         imagePlaceholder.style.display = 'none';
-        // Add error handling
         profileImage.onerror = function() {
             profileImage.classList.remove('loaded');
             imagePlaceholder.style.display = 'flex';
+            console.error("Image failed to load:", profileImage.src);
         };
     } else {
         profileImage.src = '';
@@ -221,12 +214,6 @@ imageUploadInput.addEventListener('change', async (e) => {
     }
 });
 
-    // Set the image URL and update UI
-    currentData.imageUrl = data.publicUrl;
-    updateProfileImage();
-    saveDataToSupabase();
-});
-
 function handleAddGoal() {
     const text = newGoalInput.value.trim();
     if (text) {
@@ -277,7 +264,7 @@ function closeModal() {
     modalOverlay.style.display = 'none';
     currentlyEditingCell = null;
 }
-    
+
 modalSaveBtn.addEventListener('click', () => {
     if (currentlyEditingCell) {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
@@ -290,8 +277,7 @@ modalSaveBtn.addEventListener('click', () => {
 
 modalCancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', (e) => e.target === modalOverlay && closeModal());
-    
+
 // --- Initial Load ---
-// Get our unique user ID and load the data from Supabase.
 userId = getUserId();
 loadDataFromSupabase();
