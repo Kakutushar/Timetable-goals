@@ -35,6 +35,9 @@ let currentlyEditingCell = null;
 const timetableTimes = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"];
 const timetableDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+// --- NEW: Debounce variable ---
+let debounceTimeout;
+
 // --- Data Handling with kvdb.io ---
 async function loadDataFromKVDB() {
     try {
@@ -60,10 +63,21 @@ async function saveDataToKVDB() {
             method: 'POST',
             body: JSON.stringify(currentData),
         });
+        console.log("Data saved successfully.");
     } catch (error) {
         console.error("Error saving data:", error);
     }
 }
+
+// --- NEW: Debounced Save Function ---
+// This function ensures we don't save on every single change, which prevents race conditions.
+function debouncedSave() {
+    // Clear any previous pending save
+    clearTimeout(debounceTimeout);
+    // Set a new save to run after 1 second of inactivity
+    debounceTimeout = setTimeout(saveDataToKVDB, 1000);
+}
+
 
 // --- UI Update Functions ---
 function updateUI() {
@@ -148,7 +162,7 @@ function updateTimetable() {
 // --- Event Listeners ---
 mainHeading.addEventListener('blur', () => {
     currentData.heading = mainHeading.textContent;
-    saveDataToKVDB();
+    debouncedSave(); // CHANGED
 });
 
 imageUploadInput.addEventListener('change', async (e) => {
@@ -172,8 +186,8 @@ imageUploadInput.addEventListener('change', async (e) => {
         
         if (result.data && result.data.url) {
             currentData.imageUrl = result.data.url;
-            await saveDataToKVDB();
             updateProfileImage();
+            debouncedSave(); // CHANGED
         }
     } catch (error) {
         console.error('Error uploading image:', error);
@@ -187,7 +201,7 @@ function handleAddGoal() {
         currentData.goals.push({ text, completed: false });
         newGoalInput.value = '';
         updateGoals();
-        saveDataToKVDB();
+        debouncedSave(); // CHANGED
     }
 }
 addGoalBtn.addEventListener('click', handleAddGoal);
@@ -206,7 +220,7 @@ goalsList.addEventListener('click', (e) => {
         }
         updateGoals();
         updateStreak();
-        saveDataToKVDB();
+        debouncedSave(); // CHANGED
     }
 });
 
@@ -237,7 +251,7 @@ modalSaveBtn.addEventListener('click', () => {
         const cellId = `${currentlyEditingCell.dataset.day}-${currentlyEditingCell.dataset.time}`;
         currentData.timetable[cellId] = modalTextarea.value;
         currentlyEditingCell.textContent = modalTextarea.value;
-        saveDataToKVDB();
+        debouncedSave(); // CHANGED
         closeModal();
     }
 });
