@@ -4,15 +4,15 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gsta
 import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
-// --- Firebase Configuration ---
-// IMPORTANT: Replace this with your actual Firebase project configuration.
+// --- Your Personal Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDI4o3Ckay77QOu893o_r3qcDvktoMMYyw",
+  authDomain: "timetabledoingit.firebaseapp.com",
+  projectId: "timetabledoingit",
+  storageBucket: "timetabledoingit.appspot.com",
+  messagingSenderId: "476254328121",
+  appId: "1:476254328121:web:f39ec0d2595c70786884e8",
+  measurementId: "G-8WK29XTWCP"
 };
 
 // --- Initialize Firebase ---
