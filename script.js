@@ -1,5 +1,5 @@
 // --- Configuration --- //
-const IMGBB_API_KEY = 'PASTE_YOUR_IMGBB_API_KEY_HERE';
+const IMGBB_API_KEY = '4a1fc52283ea790757c535e5c30111f1';
 const JSONBIN_MASTER_KEY = '$2a$10$xgBIEIBCeftimziCGu53VudNEB5SID9WOD9phb2FAxezLz/IpjSIK';
 const JSONBIN_BIN_ID = '68a98b4343b1c97be9264f29';
 
