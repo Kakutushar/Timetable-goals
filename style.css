@@ -1,3 +1,163 @@
+:root {
+    --primary-color: #D98E73;
+    --secondary-color: #F1E3DD;
+    --background-color: #FCFAF9;
+    --text-color: #2C2C2C;
+    --card-bg: #FFFFFF;
+    --border-color: #E0D6D1;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Lora', serif;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+#app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+header {
+    margin-bottom: 10px;
+}
+
+#main-heading {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 5px;
+    outline: none;
+}
+
+.goals-and-streak {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.daily-goals-card, .streak-card, .timetable-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    flex: 1;
+    min-width: 250px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+}
+
+.progress-container {
+    background: var(--secondary-color);
+    border-radius: 6px;
+    height: 10px;
+    width: 120px;
+    overflow: hidden;
+    margin-left: 10px;
+}
+
+#progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: var(--primary-color);
+    transition: width 0.3s ease-in-out;
+}
+
+#goals-list {
+    margin: 10px 0;
+    list-style: none;
+}
+
+#goals-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 5px;
+    background: var(--secondary-color);
+}
+
+#goals-list li.completed {
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.add-goal-form {
+    display: flex;
+    margin-top: 10px;
+}
+
+#new-goal-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px 0 0 8px;
+}
+
+#add-goal-btn {
+    padding: 6px 12px;
+    border: none;
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    font-weight: 600;
+}
+#add-goal-btn:hover {
+    background-color: #C87A66;
+}
+
+.streak-card {
+    text-align: center;
+}
+
+.streak-circle {
+    margin: 10px auto;
+    width: 120px;
+    height: 120px;
+    border: 6px solid var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.streak-circle span {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Smaller version for the two streaks */
 .streak-circle.small {
     width: 90px;
     height: 90px;
@@ -25,4 +185,94 @@
 }
 #timetable-streak-btn:hover {
     background-color: #C87A66;
+}
+
+.timetable-card table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.timetable-card th,
+.timetable-card td {
+    border: 1px solid var(--border-color);
+    padding: 8px;
+    text-align: center;
+}
+
+.sidebar {
+    width: 200px;
+    padding: 20px;
+    background: var(--card-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-uploader {
+    display: block;
+    cursor: pointer;
+    text-align: center;
+}
+
+#profile-image {
+    max-width: 100%;
+    border-radius: 50%;
+    display: none;
+}
+
+.image-placeholder {
+    width: 120px;
+    height: 120px;
+    border: 2px dashed var(--border-color);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--border-color);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    width: 350px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modal-actions button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#modal-save-btn {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+#modal-cancel-btn {
+    background: var(--secondary-color);
+    color: var(--text-color);
 }
