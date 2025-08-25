@@ -258,6 +258,7 @@ mainHeading.addEventListener('keydown', (e) => {
     }
 });
 
+// --- ✅ FIXED IMAGE UPLOAD CODE --- //
 imageUploadInput.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -273,14 +274,21 @@ imageUploadInput.addEventListener('change', async (e) => {
             body: formData,
         });
 
-        if (!response.ok) throw new Error('Image upload failed.');
+        if (!response.ok) {
+            console.error("Upload error:", await response.text());
+            throw new Error('Image upload failed.');
+        }
 
         const result = await response.json();
+        console.log("Upload result:", result);
 
-        if (result.data && result.data.url) {
-            currentData.imageUrl = result.data.url;
+        if (result.data && result.data.display_url) {
+            currentData.imageUrl = result.data.display_url;
             updateProfileImage();
             saveDataToJsonBin();
+        } else {
+            console.error("Unexpected response:", result);
+            imagePlaceholder.innerHTML = '<span>Upload failed</span>';
         }
     } catch (error) {
         console.error('Error uploading image:', error);
